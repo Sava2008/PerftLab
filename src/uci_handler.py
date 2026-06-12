@@ -1,8 +1,10 @@
-import chess
-import chess.pgn
 import logging
 from datetime import date
 from time import time
+
+import chess
+import chess.pgn
+
 from time_control import TimeControl
 
 
@@ -88,12 +90,11 @@ def conclude_game_timeout(
     side_time_control: TimeControl,
     side: chess.Color,
 ) -> str:
-    enemy_color: chess.Color = (
-        chess.BLACK if side == chess.WHITE else chess.WHITE
-    )
+    enemy_color: chess.Color = chess.BLACK if side == chess.WHITE else chess.WHITE
     result: str
     game_pgn = chess.pgn.Game.from_board(board)
     if board.has_insufficient_material(enemy_color):
+        result = "1/0-1/0"
         conclude_game(
             game_pgn,
             "1/0-1/0",
@@ -153,13 +154,14 @@ def uci_manager(
         UCI_command.start_new_game(engine)
         UCI_command.check_readiness(engine)
 
-    white_time_control = TimeControl(0, 1, 0, 0)
-    black_time_control = TimeControl(0, 1, 0, 0)
+    white_time_control = TimeControl(0, 5, 0, 2)
+    black_time_control = TimeControl(0, 5, 0, 2)
     while not board.is_game_over():
+        game_result: str
         match board.turn:
             case chess.WHITE:
                 if white_time_control.time_as_secs <= 0:
-                    game_result: str = conclude_game_timeout(
+                    game_result = conclude_game_timeout(
                         board,
                         white_engine_path,
                         black_engine_path,
@@ -182,7 +184,7 @@ def uci_manager(
                 end = time()
                 white_time_control.decrease_time(end - start)
                 if white_time_control.time_as_secs <= 0:
-                    game_result: str = conclude_game_timeout(
+                    game_result = conclude_game_timeout(
                         board,
                         white_engine_path,
                         black_engine_path,
@@ -199,7 +201,7 @@ def uci_manager(
                 white_time_control.apply_increment()
             case chess.BLACK:
                 if black_time_control.time_as_secs <= 0:
-                    game_result: str = conclude_game_timeout(
+                    game_result = conclude_game_timeout(
                         board,
                         white_engine_path,
                         black_engine_path,
@@ -222,7 +224,7 @@ def uci_manager(
                 end = time()
                 black_time_control.decrease_time(end - start)
                 if black_time_control.time_as_secs <= 0:
-                    game_result: str = conclude_game_timeout(
+                    game_result = conclude_game_timeout(
                         board,
                         white_engine_path,
                         black_engine_path,

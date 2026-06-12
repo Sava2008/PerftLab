@@ -1,8 +1,10 @@
-import chess
 import logging
-import uci_handler
 import subprocess
+
+import chess
+
 import starting_positions
+import uci_handler
 
 TOTAL_GAMES: int = 65 * 2
 
@@ -13,8 +15,8 @@ def main() -> None:
         level=logging.DEBUG,
         format="%(message)s",
     )
-    engine1_path = "Ferrous_v0.4.0.exe"
-    engine2_path = "Ferrous_v0.4.0-pre1.exe"
+    engine2_path = "Ferrous_v0.4.0.exe"
+    engine1_path = "Ferrous_v0.5.0-dev.exe"
     engine1_won = 0
     engine2_won = 0
     engine1 = subprocess.Popen(
@@ -71,6 +73,26 @@ def main() -> None:
         f"{engine1}: {engine1_won} wins, {engine2_won} losses, {TOTAL_GAMES - (engine2_won + engine1_won)} draws"
     )
 
+    # board = chess.Board(
+    #     "rnbq1rk1/pppp1ppp/4pn2/8/1bPP4/2N5/PPQ1PPPP/R1B1KBNR w KQ - 4 5"
+    # )
+    # _ = uci_handler.uci_manager(
+    #     board,
+    #     engine1,
+    #     engine2,
+    #     engine1_path,
+    #     engine2_path,
+    #     engine1_path,
+    #     engine2_path,
+    #     engine1_won,
+    #     engine2_won,
+    # )
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+        print("the script has run successfully")
+    except Exception as e:
+        print(e)
+    input()
