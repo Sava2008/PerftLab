@@ -6,7 +6,7 @@ import chess
 import starting_positions
 import uci_handler
 
-TOTAL_GAMES: int = 65 * 2
+TOTAL_GAMES: int = len(starting_positions.STARTING_POSITIONS) * 2
 
 
 def main() -> None:
@@ -15,7 +15,7 @@ def main() -> None:
         level=logging.DEBUG,
         format="%(message)s",
     )
-    engine2_path = "Ferrous_v0.4.0.exe"
+    engine2_path = "Ferrous_v0.4.1.exe"
     engine1_path = "Ferrous_v0.5.0-dev.exe"
     engine1_won = 0
     engine2_won = 0
@@ -33,11 +33,8 @@ def main() -> None:
         stderr=subprocess.PIPE,
         text=True,
     )
-    uci_handler.UCI_command.has_uci(engine1)
-    uci_handler.UCI_command.has_uci(engine2)
+
     for pos in starting_positions.STARTING_POSITIONS:
-        if pos.assessment != starting_positions.PositionAssessment.equal:
-            continue
         print(f"playing position: {pos.fen}")
         board = chess.Board(pos.fen)
         score1, score2 = uci_handler.uci_manager(
@@ -70,23 +67,8 @@ def main() -> None:
         engine2_won += score2
 
     print(
-        f"{engine1}: {engine1_won} wins, {engine2_won} losses, {TOTAL_GAMES - (engine2_won + engine1_won)} draws"
+        f"{engine1_path}: {engine1_won} wins, {engine2_won} losses, {TOTAL_GAMES - (engine2_won + engine1_won)} draws"
     )
-
-    # board = chess.Board(
-    #     "rnbq1rk1/pppp1ppp/4pn2/8/1bPP4/2N5/PPQ1PPPP/R1B1KBNR w KQ - 4 5"
-    # )
-    # _ = uci_handler.uci_manager(
-    #     board,
-    #     engine1,
-    #     engine2,
-    #     engine1_path,
-    #     engine2_path,
-    #     engine1_path,
-    #     engine2_path,
-    #     engine1_won,
-    #     engine2_won,
-    # )
 
 
 if __name__ == "__main__":

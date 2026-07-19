@@ -12,7 +12,7 @@ class UCI_command:
     @staticmethod
     def get_best_move(engine, board: chess.Board) -> chess.Move:
         engine.stdin.write(f"position fen {board.fen()}\n")
-        engine.stdin.write("go movetime 1000\n")
+        engine.stdin.write("go movetime 500\n")
         engine.stdin.flush()
         while True:
             line = engine.stdout.readline()
