@@ -154,8 +154,8 @@ def uci_manager(
         UCI_command.start_new_game(engine)
         UCI_command.check_readiness(engine)
 
-    white_time_control = TimeControl(0, 5, 0, 2)
-    black_time_control = TimeControl(0, 5, 0, 2)
+    white_time_control = TimeControl(0, 1, 0, 0)
+    black_time_control = TimeControl(0, 1, 0, 0)
     while not board.is_game_over():
         game_result: str
         match board.turn:
