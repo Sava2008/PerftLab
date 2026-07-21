@@ -1,8 +1,13 @@
 import pygame as pg
-from chess import BLACK, WHITE, Board
+from chess import BLACK, WHITE, Board, Move, InvalidMoveError
 from pygame.color import Color
 from pygame.rect import Rect
 from pygame.surface import Surface
+
+
+class InteractivePieces:
+    grabbed_piece: int | None = None
+    promotion_piece: int | None = None
 
 
 class ImmutableMeta(type):
@@ -25,17 +30,13 @@ class ChessCoords(metaclass=ImmutableMeta):
     )
 
     @classmethod
-    def move_to_uci(
-        cls, from_idx: int, to_idx: int, promo: str | None = None
-    ) -> str:
+    def move_to_uci(cls, from_idx: int, to_idx: int) -> str:
         uci_mv: str = cls.coords[from_idx] + cls.coords[to_idx]
-        if promo is not None:
-            uci_mv += promo
+        if InteractivePieces.promotion_piece is not None and (
+            to_idx < 8 or to_idx > 55
+        ):
+            uci_mv += InteractivePieces.promotion_piece
         return uci_mv
-
-
-class InteractivePieces:
-    grabbed_piece: int = 64
 
 
 SQUARE_SIDE: int = 100
@@ -144,11 +145,15 @@ def place_piece(board: Board, mouse_x: int, mouse_y: int) -> None:
     uci_move = ChessCoords.move_to_uci(
         InteractivePieces.grabbed_piece, final_pos
     )
-    print(uci_move)
-    if uci_move in board.legal_moves:
-        board.push_uci(uci_move)
 
-    InteractivePieces.grabbed_piece = 64
+    try:
+        if Move.from_uci(uci_move) in board.legal_moves:
+            board.push_uci(uci_move)
+    except InvalidMoveError:
+        pass  # let the player make another move
+
+    InteractivePieces.grabbed_piece = None
+    InteractivePieces.promotion_piece = None
 
 
 def play_against_engine(
@@ -164,8 +169,27 @@ def play_against_engine(
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
+            if (
+                event.type == pg.KEYDOWN
+                and InteractivePieces.grabbed_piece is not None
+                and board.piece_type_at(InteractivePieces.grabbed_piece) == 1
+            ):
+                InteractivePieces.promotion_piece = (
+                    "q"
+                    if event.key == pg.K_q
+                    else "r"
+                    if event.key == pg.K_r
+                    else "b"
+                    if event.key == pg.K_b
+                    else "n"
+                    if event.key == pg.K_n
+                    else None
+                )
 
-        if pg.mouse.get_pressed()[0] and InteractivePieces.grabbed_piece == 64:
+        if (
+            pg.mouse.get_pressed()[0]
+            and InteractivePieces.grabbed_piece is None
+        ):
             mouse_x, mouse_y = pg.mouse.get_pos()
             if (
                 mouse_x < 8 * SQUARE_SIDE and mouse_y < 8 * SQUARE_SIDE
@@ -173,7 +197,7 @@ def play_against_engine(
                 grab_piece(mouse_x, mouse_y)
         if (
             pg.mouse.get_just_released()[0]
-            and InteractivePieces.grabbed_piece < 64
+            and InteractivePieces.grabbed_piece is not None
         ):
             mouse_x, mouse_y = pg.mouse.get_pos()
             if mouse_x < 8 * SQUARE_SIDE and mouse_y < 8 * SQUARE_SIDE:
