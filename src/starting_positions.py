@@ -446,3 +446,6 @@ STARTING_POSITIONS: tuple[Position, ...] = (
         True,
     ),  # Latvian gambit
 )
+
+if __name__ == "__main__":
+    print(f"positions: {len(STARTING_POSITIONS)}")

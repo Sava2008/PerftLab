@@ -1,7 +1,6 @@
 import pygame as pg
 from chess import BLACK, WHITE, Board, Move, InvalidMoveError
 from pygame.color import Color
-from pygame.rect import Rect
 from pygame.surface import Surface
 
 SQUARE_SIDE: int = 100
@@ -96,7 +95,7 @@ class ChessCoords(metaclass=ImmutableMeta):
         for letter in ("a", "b", "c", "d", "e", "f", "g", "h")
     )
     scalar_coords: tuple[tuple[int, int], ...] = tuple(
-        (x * SQUARE_SIDE, y * SQUARE_SIDE)
+        (x * SQUARE_SIDE + 5, y * SQUARE_SIDE + 5)
         for y in range(7, -1, -1)
         for x in range(0, 8)
     )
@@ -126,7 +125,8 @@ def calculate_index(x: int, y: int) -> int:
     return normalized_x + (8 * normalized_y)
 
 
-def draw_board(screen: Surface, board: Board) -> None:
+def create_board_surface() -> Surface:
+    board_surface: Surface = Surface((BOARD_SIDE_LEN, BOARD_SIDE_LEN))
     for sq in range(64):
         col: int
         row: int
@@ -135,33 +135,37 @@ def draw_board(screen: Surface, board: Board) -> None:
             LIGHT_SQUARE_COLOR if col % 2 == row % 2 else DARK_SQUARE_COLOR
         )
         pg.draw.rect(
-            screen,
+            board_surface,
             sq_color,
-            Rect(
-                col * SQUARE_SIDE, row * SQUARE_SIDE, SQUARE_SIDE, SQUARE_SIDE
-            ),
+            (col * SQUARE_SIDE, row * SQUARE_SIDE, SQUARE_SIDE, SQUARE_SIDE),
         )
+    return board_surface
+
+
+BOARD_SURFACE: Surface = create_board_surface()
+
+
+def draw_board(screen: Surface, board: Board) -> None:
+    screen.blit(BOARD_SURFACE, (5, 5))
 
     if InteractivePieces.grabbed_piece is not None:
         blit_highlights(screen, board)
 
 
-def blit_individual_piece(
-    screen: Surface, piece_idx: int, piece_bb: int
-) -> None:
+def blit_piece_type(screen: Surface, piece_idx: int, piece_bb: int) -> None:
     while piece_bb != 0:
         piece_bb_trailing_zeros: int = (piece_bb & -piece_bb).bit_length()
 
         trailing_zeros_idx = piece_bb_trailing_zeros - 1
 
-        white_piece_x: int
-        white_piece_y: int
-        white_piece_x, white_piece_y = (
+        piece_x: int
+        piece_y: int
+        piece_x, piece_y = (
             ChessCoords.scalar_coords[trailing_zeros_idx]
             if trailing_zeros_idx != InteractivePieces.grabbed_piece
             else map(lambda x: x - (SQUARE_SIDE // 2), pg.mouse.get_pos())
         )
-        screen.blit(PIECE_IMAGES[piece_idx], (white_piece_x, white_piece_y))
+        screen.blit(PIECE_IMAGES[piece_idx], (piece_x, piece_y))
         piece_bb &= piece_bb - piece_bb_trailing_zeros
 
 
@@ -180,8 +184,8 @@ def blit_pieces(screen: Surface, board: Board) -> None:
         if bb == 0:
             continue
 
-        blit_individual_piece(screen, idx, white_occ & bb)
-        blit_individual_piece(screen, idx + 6, black_occ & bb)
+        blit_piece_type(screen, idx, white_occ & bb)
+        blit_piece_type(screen, idx + 6, black_occ & bb)
 
 
 def blit_highlights(screen: Surface, board: Board) -> None:
@@ -193,25 +197,22 @@ def blit_highlights(screen: Surface, board: Board) -> None:
     to_x: int
     to_y: int
 
-    from_x, from_y = calculate_coords(
+    from_x, from_y = ChessCoords.scalar_coords[
         InteractivePieces.selected_legal_moves[0].from_square
-    )
+    ]
     highlight_surface = pg.Surface((SQUARE_SIDE, SQUARE_SIDE), pg.SRCALPHA)
     highlight_surface.fill(FROM_SQ_HIGHLIGHT_COLOR)
-    screen.blit(
-        highlight_surface, (from_x * SQUARE_SIDE, from_y * SQUARE_SIDE)
-    )
+    screen.blit(highlight_surface, (from_x, from_y))
 
     for piece_move in InteractivePieces.selected_legal_moves:
         to_x, to_y = ChessCoords.scalar_coords[piece_move.to_square]
+        highlight_surface = pg.Surface((SQUARE_SIDE, SQUARE_SIDE), pg.SRCALPHA)
         highlight_surface.fill(
             MOVE_HIGHLIGHT_COLOR
             if board.piece_at(piece_move.to_square) is None
             else CAPTURE_HIGHLIGHT_COLOR
         )
-        screen.blit(
-            highlight_surface, (to_x * SQUARE_SIDE, to_y * SQUARE_SIDE)
-        )
+        screen.blit(highlight_surface, (to_x, to_y))
 
 
 def play_against_engine(

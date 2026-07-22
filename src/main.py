@@ -15,8 +15,8 @@ def main() -> None:
         level=logging.DEBUG,
         format="%(message)s",
     )
-    engine2_path = "Ferrous_v0.4.1.exe"
-    engine1_path = "Ferrous_v0.5.0-dev.exe"
+    engine2_path = "engines/berserk-14-x86-64.exe"
+    engine1_path = "engines/Ferrous_v0.5.0-dev.exe"
     engine1_won = 0
     engine2_won = 0
     engine1 = subprocess.Popen(
@@ -41,10 +41,10 @@ def main() -> None:
             board,
             engine1,
             engine2,
-            engine1_path,
-            engine2_path,
-            engine1_path,
-            engine2_path,
+            engine1_path.removesuffix(".exe").removeprefix("engines/"),
+            engine2_path.removesuffix(".exe").removeprefix("engines/"),
+            engine1_path.removesuffix(".exe").removeprefix("engines/"),
+            engine2_path.removesuffix(".exe").removeprefix("engines/"),
             engine1_won,
             engine2_won,
         )
@@ -56,10 +56,10 @@ def main() -> None:
             board,
             engine2,
             engine1,
-            engine2_path,
-            engine1_path,
-            engine1_path,
-            engine2_path,
+            engine2_path.removesuffix(".exe").removeprefix("engines/"),
+            engine1_path.removesuffix(".exe").removeprefix("engines/"),
+            engine1_path.removesuffix(".exe").removeprefix("engines/"),
+            engine2_path.removesuffix(".exe").removeprefix("engines/"),
             engine1_won,
             engine2_won,
         )
@@ -67,7 +67,7 @@ def main() -> None:
         engine2_won += score2
 
     print(
-        f"{engine1_path}: {engine1_won} wins, {engine2_won} losses, {TOTAL_GAMES - (engine2_won + engine1_won)} draws"
+        f"{engine1}: {engine1_won} wins, {engine2_won} losses, {TOTAL_GAMES - (engine2_won + engine1_won)} draws"
     )
 
 

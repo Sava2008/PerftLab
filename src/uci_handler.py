@@ -101,8 +101,8 @@ def conclude_game_timeout(
         conclude_game(
             game_pgn,
             "1/0-1/0",
-            white_engine_path.removesuffix(".exe"),
-            black_engine_path.removesuffix(".exe"),
+            white_engine_path,
+            black_engine_path,
             side_time_control.convert_to_pgn_time(),
             1850,
             1850,
@@ -112,8 +112,8 @@ def conclude_game_timeout(
         conclude_game(
             game_pgn,
             result,
-            white_engine_path.removesuffix(".exe"),
-            black_engine_path.removesuffix(".exe"),
+            white_engine_path,
+            black_engine_path,
             side_time_control.convert_to_pgn_time(),
             1850,
             1850,
@@ -250,8 +250,8 @@ def uci_manager(
     conclude_game(
         game_pgn,
         game_result,
-        white_engine_path.removesuffix(".exe"),
-        black_engine_path.removesuffix(".exe"),
+        white_engine_path,
+        black_engine_path,
         white_time_control.convert_to_pgn_time(),
         1850,
         1850,
