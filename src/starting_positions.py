@@ -1,4 +1,7 @@
-class PositionAssessment:
+from enum import IntEnum
+
+
+class PositionAssessment(IntEnum):
     better_for_white = 1
     better_for_black = 2
     equal = 3
@@ -8,7 +11,7 @@ class PositionAssessment:
     losing_for_black = 7
 
 
-class OpeningFamily:
+class OpeningFamily(IntEnum):
     e4 = 1
     d4 = 2
     c4 = 3
@@ -426,7 +429,7 @@ STARTING_POSITIONS: tuple[Position, ...] = (
     ),  # Englund gambit
     Position(
         "rnbqkb1r/pppppppp/5n2/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 0 2",
-        PositionAssessment.slightly_better_for_white,
+        PositionAssessment.better_for_black,
         OpeningFamily.d4,
         False,
     ),  # Omega gambit

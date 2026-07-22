@@ -4,13 +4,14 @@ from time import time
 
 import chess
 import chess.pgn
+from chess import Move
 
 from time_control import TimeControl
 
 
 class UCI_command:
     @staticmethod
-    def get_best_move(engine, board: chess.Board) -> chess.Move:
+    def get_best_move(engine, board: chess.Board) -> Move:
         engine.stdin.write(f"position fen {board.fen()}\n")
         engine.stdin.write("go movetime 500\n")
         engine.stdin.flush()
@@ -90,7 +91,9 @@ def conclude_game_timeout(
     side_time_control: TimeControl,
     side: chess.Color,
 ) -> str:
-    enemy_color: chess.Color = chess.BLACK if side == chess.WHITE else chess.WHITE
+    enemy_color: chess.Color = (
+        chess.BLACK if side == chess.WHITE else chess.WHITE
+    )
     result: str
     game_pgn = chess.pgn.Game.from_board(board)
     if board.has_insufficient_material(enemy_color):
@@ -216,7 +219,7 @@ def uci_manager(
                         engine2_path,
                     )
                 start = time()
-                best_move = UCI_command.get_best_move(
+                best_move: Move = UCI_command.get_best_move(
                     black_engine,
                     board,
                 )
