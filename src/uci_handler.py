@@ -11,9 +11,9 @@ from time_control import TimeControl
 
 class UCI_command:
     @staticmethod
-    def get_best_move(engine, board: chess.Board) -> Move:
+    def get_best_move(engine, board: chess.Board, movetime_ms: int) -> Move:
         engine.stdin.write(f"position fen {board.fen()}\n")
-        engine.stdin.write("go movetime 500\n")
+        engine.stdin.write(f"go movetime {movetime_ms}\n")
         engine.stdin.flush()
         while True:
             line = engine.stdout.readline()
@@ -27,7 +27,7 @@ class UCI_command:
             if best_move in board.legal_moves:
                 return best_move
             else:
-                raise ValueError("illegal move {best_move}")
+                raise ValueError(f"illegal move {best_move}, on board {board}")
 
     @staticmethod
     def has_uci(engine) -> None:
@@ -51,8 +51,12 @@ class UCI_command:
         engine.stdin.write("isready\n")
         engine.stdin.flush()
 
-        if engine.stdout.readline().strip() != "readyok":
-            raise ValueError
+        while True:
+            line = engine.stdout.readline().strip()
+            if line == "":
+                raise RuntimeError(engine.stderr.read())
+            if line == "readyok":
+                return
 
     @staticmethod
     def start_new_game(engine) -> None:
@@ -159,6 +163,7 @@ def uci_manager(
 
     white_time_control = TimeControl(0, 1, 0, 0)
     black_time_control = TimeControl(0, 1, 0, 0)
+    mutual_movetime: int = 500
     while not board.is_game_over():
         game_result: str
         match board.turn:
@@ -180,8 +185,7 @@ def uci_manager(
                     )
                 start = time()
                 best_move = UCI_command.get_best_move(
-                    white_engine,
-                    board,
+                    white_engine, board, mutual_movetime
                 )
                 board.push(best_move)
                 end = time()
@@ -220,8 +224,7 @@ def uci_manager(
                     )
                 start = time()
                 best_move: Move = UCI_command.get_best_move(
-                    black_engine,
-                    board,
+                    black_engine, board, mutual_movetime
                 )
                 board.push(best_move)
                 end = time()

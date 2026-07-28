@@ -1,7 +1,14 @@
+import subprocess
+from subprocess import PIPE
+from time import time
+
 import pygame as pg
-from chess import BLACK, WHITE, Board, Move, InvalidMoveError
+from chess import BLACK, WHITE, Board, InvalidMoveError, Move, Piece
 from pygame.color import Color
 from pygame.surface import Surface
+
+from time_control import TimeControl
+from uci_handler import UCI_command
 
 SQUARE_SIDE: int = 100
 BOARD_SIDE_LEN: int = SQUARE_SIDE * 8
@@ -13,26 +20,31 @@ FROM_SQ_HIGHLIGHT_COLOR: Color = Color(79, 96, 120, 150)
 CAPTURE_HIGHLIGHT_COLOR: Color = Color(186, 62, 0, 200)
 
 BG_COLOR: str = "gray"
-PIECE_IMAGES: tuple[Surface, ...] = tuple(
-    pg.transform.scale(img, (SQUARE_SIDE, SQUARE_SIDE))
-    for img in (
-        pg.image.load(file_path)
-        for file_path in (
-            "pieces/white_pawn.png",
-            "pieces/white_knight.png",
-            "pieces/white_bishop.png",
-            "pieces/white_rook.png",
-            "pieces/white_queen.png",
-            "pieces/white_king.png",
-            "pieces/black_pawn.png",
-            "pieces/black_knight.png",
-            "pieces/black_bishop.png",
-            "pieces/black_rook.png",
-            "pieces/black_queen.png",
-            "pieces/black_king.png",
+piece_images: tuple[Surface, ...] | None = None
+
+
+def init_images() -> None:
+    global piece_images
+    piece_images = tuple(
+        pg.transform.scale(img, (SQUARE_SIDE, SQUARE_SIDE))
+        for img in (
+            pg.image.load(file_path).convert_alpha()
+            for file_path in (
+                "pieces/white_pawn.png",
+                "pieces/white_knight.png",
+                "pieces/white_bishop.png",
+                "pieces/white_rook.png",
+                "pieces/white_queen.png",
+                "pieces/white_king.png",
+                "pieces/black_pawn.png",
+                "pieces/black_knight.png",
+                "pieces/black_bishop.png",
+                "pieces/black_rook.png",
+                "pieces/black_queen.png",
+                "pieces/black_king.png",
+            )
         )
     )
-)
 
 
 class InteractivePieces:
@@ -41,17 +53,30 @@ class InteractivePieces:
     selected_legal_moves: list[Move] = []
 
     @classmethod
-    def fill_legal_moves(cls, board: Board) -> None:
+    def fill_legal_moves(cls, board: Board, player_color: int) -> None:
+        if cls.grabbed_piece is not None:
+            selected_piece: Piece | None = board.piece_at(cls.grabbed_piece)
+            if selected_piece is None:
+                cls.grabbed_piece = None
+                return None
+            piece_color: int = selected_piece.color
+            if (piece_color == WHITE and player_color == BLACK) or (
+                piece_color == BLACK and player_color == WHITE
+            ):
+                cls.grabbed_piece = None
         if cls.grabbed_piece is None:
             return None
+
         cls.selected_legal_moves = list(
             board.generate_legal_moves(from_mask=1 << cls.grabbed_piece)
         )
 
     @classmethod
-    def grab_piece(cls, board: Board, mouse_x: int, mouse_y: int) -> None:
+    def grab_piece(
+        cls, board: Board, mouse_x: int, mouse_y: int, player_color: int
+    ) -> None:
         cls.grabbed_piece = calculate_index(mouse_x, mouse_y)
-        cls.fill_legal_moves(board)
+        cls.fill_legal_moves(board, player_color)
 
     @classmethod
     def place_piece(cls, board: Board, mouse_x: int, mouse_y: int) -> None:
@@ -165,7 +190,7 @@ def blit_piece_type(screen: Surface, piece_idx: int, piece_bb: int) -> None:
             if trailing_zeros_idx != InteractivePieces.grabbed_piece
             else map(lambda x: x - (SQUARE_SIDE // 2), pg.mouse.get_pos())
         )
-        screen.blit(PIECE_IMAGES[piece_idx], (piece_x, piece_y))
+        screen.blit(piece_images[piece_idx], (piece_x, piece_y))
         piece_bb &= piece_bb - piece_bb_trailing_zeros
 
 
@@ -220,6 +245,7 @@ def play_against_engine(
 ) -> None:
     pg.init()
     screen: Surface = pg.display.set_mode((1280, 820), pg.SRCALPHA)
+    init_images()
     clock = pg.time.Clock()
     board: Board = Board(fen)
     game_font: pg.Font = pg.font.SysFont("Consolas", 15)
@@ -229,6 +255,29 @@ def play_against_engine(
     current_time: int = 0
 
     fps: int = 60
+
+    player_side: int = WHITE
+    adversary_path: str = "engines/stockfish7.exe"
+
+    engine_process = subprocess.Popen(
+        [adversary_path],
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+        text=True,
+    )
+    engine_thinking_time: int = 2000
+    time_management_player: TimeControl = TimeControl(0, 3, 0, 2)
+    time_management_engine: TimeControl = TimeControl(0, 3, 0, 2)
+
+    engine_time_widget = time_management_engine.time_as_secs
+    player_time_widget = time_management_player.time_as_secs
+
+    player_timer_started: bool = False
+
+    player_start_time: float | None = None
+
+    can_play_more: bool = True
 
     running: bool = True
     while running:
@@ -251,22 +300,70 @@ def play_against_engine(
                     if event.key == pg.K_n
                     else None
                 )
+        if not can_play_more:
+            continue
 
         if (
-            pg.mouse.get_pressed()[0]
-            and InteractivePieces.grabbed_piece is None
+            board.is_stalemate()
+            or board.is_fifty_moves()
+            or board.is_fivefold_repetition()
+            or board.is_insufficient_material()
         ):
-            mouse_x, mouse_y = pg.mouse.get_pos()
+            print("draw")
+            can_play_more = False
+        if board.turn == player_side:
+            if board.is_checkmate():
+                print("you lost")
+                can_play_more = False
+            if time_management_player.time_as_secs <= 0:
+                print("you lost on time")
+                can_play_more = False
+            if not player_timer_started:
+                player_timer_started = True
+                player_start_time = time()
             if (
-                mouse_x < BOARD_SIDE_LEN and mouse_y < BOARD_SIDE_LEN
-            ):  # check if cursor is within board
-                InteractivePieces.grab_piece(board, mouse_x, mouse_y)
+                pg.mouse.get_pressed()[0]
+                and InteractivePieces.grabbed_piece is None
+            ):
+                mouse_x, mouse_y = pg.mouse.get_pos()
+                if (
+                    mouse_x < BOARD_SIDE_LEN and mouse_y < BOARD_SIDE_LEN
+                ):  # check if cursor is within board
+                    InteractivePieces.grab_piece(
+                        board, mouse_x, mouse_y, player_side
+                    )
+        else:
+            if board.is_checkmate():
+                print("engine lost")
+                can_play_more = False
+                continue
+            if time_management_player.time_as_secs <= 0:
+                print("engine lost on time")
+                can_play_more = False
+
+            start_time = time()
+            engine_move = UCI_command.get_best_move(
+                engine_process, board, engine_thinking_time
+            )
+            # safety mechanism
+            if engine_move not in board.legal_moves:
+                print(f"trying to make an illegal move: {engine_move}")
+            board.push(engine_move)
+            time_management_engine.decrease_time(time() - start_time)
+            time_management_engine.apply_increment()
+            engine_time_widget = time_management_engine.time_as_secs
+
         if (
             pg.mouse.get_just_released()[0]
             and InteractivePieces.grabbed_piece is not None
         ):
             mouse_x, mouse_y = pg.mouse.get_pos()
             InteractivePieces.place_piece(board, mouse_x, mouse_y)
+            time_management_player.decrease_time(time() - player_start_time)
+            time_management_player.apply_increment()
+            player_time_widget = time_management_player.time_as_secs
+            player_timer_started = False
+
         screen.fill(BG_COLOR)
         draw_board(screen, board)
         blit_pieces(screen, board)
@@ -275,12 +372,33 @@ def play_against_engine(
             fps_chart,
             (1200, 5),
         )
-
+        engine_time_surface, player_time_surface = (
+            game_font.render(
+                f"time left: {engine_time_widget}", True, "black"
+            ),
+            game_font.render(
+                f"time left: {player_time_widget}", True, "black"
+            ),
+        )
+        screen.blit(
+            engine_time_surface,
+            (1100, 50),
+        )
+        screen.blit(
+            player_time_surface,
+            (1100, 400),
+        )
         # update fps counter once per second
         current_time = pg.time.get_ticks()
-        if current_time - last_time_updated >= 1000:
+        ticks_passed = current_time - last_time_updated
+        if ticks_passed >= 500:
             last_time_updated = current_time
             fps = int(clock.get_fps())
+
+            if board.turn == player_side:
+                player_time_widget -= ticks_passed / 1000
+            else:
+                engine_time_widget -= ticks_passed / 1000
 
         pg.display.flip()
         clock.tick(60)
@@ -288,4 +406,5 @@ def play_against_engine(
     pg.quit()
 
 
-play_against_engine()
+if __name__ == "__main__":
+    play_against_engine()

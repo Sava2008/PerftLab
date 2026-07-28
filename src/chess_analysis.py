@@ -1,9 +1,10 @@
 import subprocess
-from subprocess import PIPE
-from chess import Move, Board
-from enum import IntEnum, StrEnum
-from dataclasses import dataclass
 from collections import deque
+from dataclasses import dataclass
+from enum import IntEnum, StrEnum
+from subprocess import PIPE
+
+from chess import Board, Move
 
 
 class AnalysisResult(IntEnum):
@@ -22,8 +23,8 @@ class MoveAnnotation(StrEnum):
 
 class AnalysisFeatures:
     fen: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-    scores: deque[float] = deque(maxlen=2)
-    best_moves: deque[Move] = deque(maxlen=2)
+    scores: deque[float] = deque(maxlen=2)  # noqa: RUF012
+    best_moves: deque[Move] = deque(maxlen=2)  # noqa: RUF012
     engine: str = "engines/berserk-14-x86-64.exe"
     depth: int = 12
     result_type: int = AnalysisResult.both
@@ -73,8 +74,8 @@ class MoveAssessment:
 
         engine_process.stdin.write(f"position fen {pos}\n")
         output: str
-        errors: str
-        output, errors = engine_process.communicate(
+        _errors: str
+        output, _errors = engine_process.communicate(
             input=f"go depth {AnalysisFeatures.depth}\n"
         )
         print(
