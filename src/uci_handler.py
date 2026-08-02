@@ -12,6 +12,7 @@ from time_control import TimeControl
 class UCI_command:
     @staticmethod
     def get_best_move(engine, board: chess.Board, movetime_ms: int) -> Move:
+        assert engine.poll() is None
         engine.stdin.write(f"position fen {board.fen()}\n")
         engine.stdin.write(f"go movetime {movetime_ms}\n")
         engine.stdin.flush()

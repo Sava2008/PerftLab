@@ -4,7 +4,7 @@ a module for testing chess engines, by making them solve chess puzzles, pairing 
 
 ## technologies
 
-- python 3.14.4
+- python 3.14.6
 - python-chess 1.11.2
 
 ### Credits

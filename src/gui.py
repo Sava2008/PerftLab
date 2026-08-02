@@ -257,7 +257,7 @@ def play_against_engine(
     fps: int = 60
 
     player_side: int = WHITE
-    adversary_path: str = "engines/stockfish7.exe"
+    adversary_path: str = "engines/Ferrous_v0.5.0-dev9_openingbook.exe"
 
     engine_process = subprocess.Popen(
         [adversary_path],
@@ -265,10 +265,11 @@ def play_against_engine(
         stdout=PIPE,
         stderr=PIPE,
         text=True,
+        encoding="utf-8",
     )
-    engine_thinking_time: int = 2000
-    time_management_player: TimeControl = TimeControl(0, 3, 0, 2)
-    time_management_engine: TimeControl = TimeControl(0, 3, 0, 2)
+    engine_thinking_time: int = 4000
+    time_management_player: TimeControl = TimeControl(0, 5, 0, 3)
+    time_management_engine: TimeControl = TimeControl(0, 5, 0, 3)
 
     engine_time_widget = time_management_engine.time_as_secs
     player_time_widget = time_management_player.time_as_secs
@@ -352,7 +353,6 @@ def play_against_engine(
             time_management_engine.decrease_time(time() - start_time)
             time_management_engine.apply_increment()
             engine_time_widget = time_management_engine.time_as_secs
-
         if (
             pg.mouse.get_just_released()[0]
             and InteractivePieces.grabbed_piece is not None

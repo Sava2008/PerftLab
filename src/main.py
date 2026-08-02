@@ -15,8 +15,8 @@ def main() -> None:
         level=logging.DEBUG,
         format="%(message)s",
     )
-    engine1_path = "engines/Ferrous_v0.5.0-dev6_qfix.exe"
-    engine2_path = "engines/Ferrous_v0.5.0-dev3_extensions.exe"
+    engine2_path = "engines/Ferrous_v0.5.0-dev6_qfix.exe"
+    engine1_path = "engines/Ferrous_v0.5.0-dev8_lmr_fix.exe"
     engine1_won = 0
     engine2_won = 0
     engine1 = subprocess.Popen(
@@ -25,6 +25,7 @@ def main() -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
     )
     engine2 = subprocess.Popen(
         [engine2_path],
@@ -32,6 +33,7 @@ def main() -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
     )
 
     for pos in starting_positions.STARTING_POSITIONS:
