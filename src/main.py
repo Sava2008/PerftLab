@@ -15,8 +15,8 @@ def main() -> None:
         level=logging.DEBUG,
         format="%(message)s",
     )
-    engine2_path = "engines/Ferrous_v0.5.0-dev6_qfix.exe"
-    engine1_path = "engines/Ferrous_v0.5.0-dev8_lmr_fix.exe"
+    engine2_path = "engines/Ferrous_v0.5.1.exe"
+    engine1_path = "engines/Ferrous_v0.5.2-dev1_balancedqsearch.exe"
     engine1_won = 0
     engine2_won = 0
     engine1 = subprocess.Popen(

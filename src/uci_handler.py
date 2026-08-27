@@ -102,10 +102,10 @@ def conclude_game_timeout(
     result: str
     game_pgn = chess.pgn.Game.from_board(board)
     if board.has_insufficient_material(enemy_color):
-        result = "1/0-1/0"
+        result = "1/2-1/2"
         conclude_game(
             game_pgn,
-            "1/0-1/0",
+            "1/2-1/2",
             white_engine_path,
             black_engine_path,
             side_time_control.convert_to_pgn_time(),
