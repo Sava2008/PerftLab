@@ -75,12 +75,12 @@ class InteractivePieces:
     def grab_piece(
         cls, board: Board, mouse_x: int, mouse_y: int, player_color: int
     ) -> None:
-        cls.grabbed_piece = calculate_index(mouse_x, mouse_y)
+        cls.grabbed_piece = calculate_index(mouse_x, mouse_y, player_color)
         cls.fill_legal_moves(board, player_color)
 
     @classmethod
-    def place_piece(cls, board: Board, mouse_x: int, mouse_y: int) -> None:
-        final_pos = calculate_index(mouse_x, mouse_y)
+    def place_piece(cls, board: Board, mouse_x: int, mouse_y: int, player_color: int) -> None:
+        final_pos = calculate_index(mouse_x, mouse_y, player_color)
         if cls.grabbed_piece is None:
             raise ValueError(
                 f"called place_piece before assigning a value to {cls.__name__}.grabbed_piece"
@@ -119,11 +119,16 @@ class ChessCoords(metaclass=ImmutableMeta):
         for number in ("1", "2", "3", "4", "5", "6", "7", "8")
         for letter in ("a", "b", "c", "d", "e", "f", "g", "h")
     )
-    scalar_coords: tuple[tuple[int, int], ...] = tuple(
+    scalar_coords: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]] = tuple(
         (x * SQUARE_SIDE + 5, y * SQUARE_SIDE + 5)
         for y in range(7, -1, -1)
         for x in range(0, 8)
-    )
+    ), tuple(
+        (x * SQUARE_SIDE + 5, y * SQUARE_SIDE + 5)
+        for y in range(0, 8)
+        for x in range(7, -1, -1)
+        )
+    
 
     @classmethod
     def move_to_uci(cls, from_idx: int, to_idx: int) -> str | None:
@@ -141,10 +146,10 @@ def calculate_coords(square: int) -> tuple[int, int]:
     return ((square % 8), (7 - (square // 8)))  # inverted coords
 
 
-def calculate_index(x: int, y: int) -> int:
+def calculate_index(x: int, y: int, color: int) -> int:
     normalized_x, normalized_y = (
-        x // SQUARE_SIDE,
-        8 - (y // SQUARE_SIDE + 1),
+        x // SQUARE_SIDE if color == WHITE else 8 - (x // SQUARE_SIDE + 1),
+        8 - (y // SQUARE_SIDE + 1) if color == WHITE else y // SQUARE_SIDE,
     )  # invert y, so that upper row = y::MAX
 
     return normalized_x + (8 * normalized_y)
@@ -186,7 +191,7 @@ def blit_piece_type(screen: Surface, piece_idx: int, piece_bb: int) -> None:
         piece_x: int
         piece_y: int
         piece_x, piece_y = (
-            ChessCoords.scalar_coords[trailing_zeros_idx]
+            ChessCoords.scalar_coords[1][trailing_zeros_idx]
             if trailing_zeros_idx != InteractivePieces.grabbed_piece
             else map(lambda x: x - (SQUARE_SIDE // 2), pg.mouse.get_pos())
         )
@@ -222,7 +227,7 @@ def blit_highlights(screen: Surface, board: Board) -> None:
     to_x: int
     to_y: int
 
-    from_x, from_y = ChessCoords.scalar_coords[
+    from_x, from_y = ChessCoords.scalar_coords[1][
         InteractivePieces.selected_legal_moves[0].from_square
     ]
     highlight_surface = pg.Surface((SQUARE_SIDE, SQUARE_SIDE), pg.SRCALPHA)
@@ -230,7 +235,7 @@ def blit_highlights(screen: Surface, board: Board) -> None:
     screen.blit(highlight_surface, (from_x, from_y))
 
     for piece_move in InteractivePieces.selected_legal_moves:
-        to_x, to_y = ChessCoords.scalar_coords[piece_move.to_square]
+        to_x, to_y = ChessCoords.scalar_coords[1][piece_move.to_square]
         highlight_surface = pg.Surface((SQUARE_SIDE, SQUARE_SIDE), pg.SRCALPHA)
         highlight_surface.fill(
             MOVE_HIGHLIGHT_COLOR
@@ -256,8 +261,8 @@ def play_against_engine(
 
     fps: int = 60
 
-    player_side: int = WHITE
-    adversary_path: str = "engines/Ferrous_v0.5.0-dev9_openingbook.exe"
+    player_side: int = BLACK
+    adversary_path: str = "engines/Ferrous_v0.5.2-dev1_balancedqsearch.exe"
 
     engine_process = subprocess.Popen(
         [adversary_path],
@@ -349,6 +354,7 @@ def play_against_engine(
             # safety mechanism
             if engine_move not in board.legal_moves:
                 print(f"trying to make an illegal move: {engine_move}")
+
             board.push(engine_move)
             time_management_engine.decrease_time(time() - start_time)
             time_management_engine.apply_increment()
@@ -358,7 +364,7 @@ def play_against_engine(
             and InteractivePieces.grabbed_piece is not None
         ):
             mouse_x, mouse_y = pg.mouse.get_pos()
-            InteractivePieces.place_piece(board, mouse_x, mouse_y)
+            InteractivePieces.place_piece(board, mouse_x, mouse_y, player_side)
             time_management_player.decrease_time(time() - player_start_time)
             time_management_player.apply_increment()
             player_time_widget = time_management_player.time_as_secs

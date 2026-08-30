@@ -18,7 +18,7 @@ class UCI_command:
         engine.stdin.flush()
         while True:
             line = engine.stdout.readline()
-            if line == "":
+            if not line:
                 raise RuntimeError(engine.stderr.read())
             elif not line.startswith("bestmove "):
                 continue
@@ -39,7 +39,7 @@ class UCI_command:
         while True:
             line = engine.stdout.readline()
 
-            if line == "":
+            if not line:
                 raise RuntimeError(engine.stderr.read())
 
             line = line.strip()
@@ -54,8 +54,11 @@ class UCI_command:
 
         while True:
             line = engine.stdout.readline().strip()
-            if line == "":
+            if not line:
                 raise RuntimeError(engine.stderr.read())
+
+            line = line.strip()
+            
             if line == "readyok":
                 return
 
