@@ -112,6 +112,7 @@ class ImmutableMeta(type):
     def __delattr__(cls, name, value) -> None:
         raise PermissionError(f"unable to delete content of {type.__name__}")
 
+PLAYER_SIDE: Color = BLACK  # modify this to change your color
 
 class ChessCoords(metaclass=ImmutableMeta):
     coords: tuple[str, ...] = tuple(
@@ -121,12 +122,12 @@ class ChessCoords(metaclass=ImmutableMeta):
     )
     scalar_coords: tuple[tuple[tuple[int, int], ...], tuple[tuple[int, int], ...]] = tuple(
         (x * SQUARE_SIDE + 5, y * SQUARE_SIDE + 5)
-        for y in range(7, -1, -1)
-        for x in range(0, 8)
+        for x in (range(7, -1, -1) if PLAYER_SIDE == BLACK else range(0, 8))
+        for y in (range(0, 8) if PLAYER_SIDE == BLACK else range(7, -1, -1))
     ), tuple(
         (x * SQUARE_SIDE + 5, y * SQUARE_SIDE + 5)
-        for y in range(0, 8)
-        for x in range(7, -1, -1)
+        for y in (range(0, 8) if PLAYER_SIDE == BLACK else range(7, -1, -1))
+        for x in (range(7, -1, -1) if PLAYER_SIDE == BLACK else range(0, 8))
         )
     
 
@@ -261,8 +262,8 @@ def play_against_engine(
 
     fps: int = 60
 
-    player_side: int = BLACK
-    adversary_path: str = "engines/Ferrous_v0.5.2-dev1_balancedqsearch.exe"
+    player_side: int = PLAYER_SIDE
+    adversary_path: str = "engines/Ferrous_v0.5.2-dev2_betteropening.exe"
 
     engine_process = subprocess.Popen(
         [adversary_path],
@@ -273,8 +274,8 @@ def play_against_engine(
         encoding="utf-8",
     )
     engine_thinking_time: int = 4000
-    time_management_player: TimeControl = TimeControl(0, 5, 0, 3)
-    time_management_engine: TimeControl = TimeControl(0, 5, 0, 3)
+    time_management_player: TimeControl = TimeControl(0, 30, 0, 3)
+    time_management_engine: TimeControl = TimeControl(0, 30, 0, 3)
 
     engine_time_widget = time_management_engine.time_as_secs
     player_time_widget = time_management_player.time_as_secs

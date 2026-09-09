@@ -1,3 +1,4 @@
 \engines
 \.pytest_cache
+src\__pycache__
 .gitignore
